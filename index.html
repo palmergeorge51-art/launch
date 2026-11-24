@@ -1,0 +1,654 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Product Launch Tracker</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap">
+<style>
+/* Layout: navy header with tabs, then one working view at a time (Overview, Checklist, Daily log, Save). Navy and gold to match the rest of the bundle. */
+:root {
+  --bg: #f3f5fa; --surface: #ffffff; --ink: #0c2240; --muted: #52607c; --line: #d8deea;
+  --band: #0c2240; --on-band: #f2f5fb; --on-band-muted: #b4c0d9;
+  --gold: #c9a24a; --gold-hover: #d8b65e; --gold-ink: #7e5f14; --gold-soft: #f6eed9;
+  --teal: #0e7f74; --teal-soft: #ddf1ee; --danger: #b3402a; --danger-soft: #f8e4df;
+  --field: #ffffff;
+  --display: 'Poppins', 'Segoe UI', system-ui, sans-serif;
+  --text: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #06122a; --surface: #0d2145; --ink: #eaf0fa; --muted: #a5b2ce; --line: #1e3868;
+    --band: #0a1c3d; --gold-ink: #e2c078; --gold-soft: #2c2b27; --teal: #4ccabb; --teal-soft: #0f3a47;
+    --danger: #ff9a85; --danger-soft: #3d2229; --field: #081a38; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #06122a; --surface: #0d2145; --ink: #eaf0fa; --muted: #a5b2ce; --line: #1e3868;
+  --band: #0a1c3d; --gold-ink: #e2c078; --gold-soft: #2c2b27; --teal: #4ccabb; --teal-soft: #0f3a47;
+  --danger: #ff9a85; --danger-soft: #3d2229; --field: #081a38; color-scheme: dark;
+}
+[hidden] { display: none !important; }
+*, *::before, *::after { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--text); font-size: 1rem; line-height: 1.55; }
+h1, h2, h3 { font-family: var(--display); line-height: 1.2; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; border-radius: 6px; }
+.in { max-width: 980px; margin-inline: auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.nowrap { white-space: nowrap; }
+.muted { color: var(--muted); }
+
+/* header */
+.top { background: var(--band); color: var(--on-band); margin-top: calc(-1 * env(safe-area-inset-top, 0px)); padding-top: calc(env(safe-area-inset-top, 0px) + 1.4rem); }
+.top-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; padding-bottom: 1rem; }
+.kicker { font-family: var(--display); font-weight: 600; font-size: .75rem; letter-spacing: .12em; text-transform: uppercase; color: #e2c078; display: flex; align-items: center; gap: .6rem; }
+.kicker::before { content: ""; width: 28px; height: 3px; background: var(--gold); }
+.top h1 { font-size: clamp(1.5rem, 4vw, 2.1rem); font-weight: 700; margin-top: .5rem; }
+.status { font-family: var(--display); font-weight: 500; font-size: .95rem; color: var(--on-band); background: rgba(255,255,255,.08); border: 1px solid rgba(180,192,217,.3); border-radius: 999px; padding: .35rem .9rem; }
+.tabs { display: flex; gap: .25rem; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { flex: none; background: none; border: 0; border-bottom: 3px solid transparent; color: var(--on-band-muted); font-family: var(--display); font-weight: 500; padding: .7rem 1rem; cursor: pointer; white-space: nowrap; }
+.tab:hover { color: var(--on-band); }
+.tab[aria-selected="true"] { color: #fff; border-bottom-color: var(--gold); }
+.tab .count { margin-left: .4rem; font-size: .75rem; background: rgba(255,255,255,.14); border-radius: 999px; padding: .05rem .5rem; }
+
+main { padding-block: 1.5rem 4rem; display: grid; gap: 1.25rem; }
+.banner { background: var(--gold-soft); border: 1px solid var(--gold); border-radius: 12px; padding: .8rem 1rem; display: flex; gap: .8rem 1.2rem; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+.banner p { max-width: 62ch; font-size: .95rem; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 1.25rem; min-width: 0; }
+.card h2 { font-size: 1.1rem; font-weight: 600; }
+.card-head { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }
+.hint { color: var(--muted); font-size: .9rem; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: .4rem; font-family: var(--display); font-weight: 600; font-size: .92rem; line-height: 1.2; padding: .65rem 1.1rem; border-radius: 9px; border: 2px solid transparent; cursor: pointer; text-decoration: none; }
+.btn-gold { background: var(--gold); color: #0c2240; }
+.btn-gold:hover { background: var(--gold-hover); }
+.btn-line { border-color: var(--line); background: transparent; }
+.btn-line:hover { border-color: var(--ink); }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-sm { padding: .4rem .75rem; font-size: .85rem; }
+.btn[disabled] { opacity: .5; cursor: default; }
+
+/* forms */
+.grid { display: grid; gap: .9rem 1rem; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+.fld { display: grid; gap: .3rem; min-width: 0; }
+.fld label { font-size: .82rem; font-weight: 600; color: var(--muted); }
+.fld input, .fld select, .fld textarea { background: var(--field); border: 1px solid var(--line); border-radius: 8px; padding: .55rem .7rem; width: 100%; min-width: 0; }
+.fld input:focus, .fld select:focus, .fld textarea:focus { border-color: var(--gold); outline: 2px solid var(--gold); outline-offset: 0; }
+.fld textarea { min-height: 7rem; resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .8rem; }
+
+/* overview */
+.kpis { display: grid; gap: 1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 1.1rem 0 0; }
+@media (min-width: 700px) { .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.kpi { border-top: 3px solid var(--gold); padding-top: .55rem; }
+.kpi dt { font-size: .78rem; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.kpi dd { margin: .15rem 0 0; font-family: var(--display); font-weight: 700; font-size: 1.55rem; font-variant-numeric: tabular-nums; }
+.kpi small { display: block; color: var(--muted); font-size: .82rem; font-weight: 400; font-family: var(--text); }
+.bar { height: 14px; border-radius: 999px; background: var(--line); overflow: hidden; margin-top: .5rem; }
+.bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--teal), var(--gold)); border-radius: 999px; min-width: 0; }
+.bar-meta { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; font-size: .9rem; margin-top: .4rem; font-variant-numeric: tabular-nums; }
+.two { display: grid; gap: 1.25rem; grid-template-columns: minmax(0, 1fr); align-items: start; }
+@media (min-width: 820px) { .two { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); } }
+.chart { width: 100%; height: auto; display: block; }
+.chart text { fill: var(--muted); font-family: var(--text); font-size: 11px; }
+.chart .g { stroke: var(--line); stroke-width: 1; }
+.chart .bandr { fill: var(--gold-soft); }
+.chart .b { fill: var(--teal); }
+.chart .b.future { fill: var(--line); }
+.chart .p { stroke: var(--gold); stroke-width: 2; stroke-dasharray: 5 4; }
+.legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: .82rem; color: var(--muted); margin-top: .5rem; }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; background: var(--teal); margin-right: .35rem; vertical-align: -1px; }
+.legend i.bd { background: var(--gold-soft); border: 1px solid var(--gold); }
+.legend i.pl { background: none; border-top: 2px dashed var(--gold); height: 0; width: 16px; border-radius: 0; vertical-align: 3px; }
+
+/* tasks */
+.tasks { list-style: none; margin: 0; padding: 0; display: grid; }
+.task { display: flex; gap: .8rem; align-items: flex-start; padding: .75rem 0; border-top: 1px solid var(--line); }
+.task:first-child { border-top: 0; }
+.task input[type=checkbox] { flex: none; width: 22px; height: 22px; margin: .1rem 0 0; accent-color: var(--teal); cursor: pointer; }
+.task-body { min-width: 0; flex: 1; }
+.task-title { font-weight: 500; }
+.task.done .task-title { color: var(--muted); text-decoration: line-through; }
+.task-hint { color: var(--muted); font-size: .88rem; margin-top: .1rem; }
+.due { flex: none; font-size: .78rem; font-weight: 600; border-radius: 999px; padding: .15rem .6rem; background: var(--line); color: var(--muted); white-space: nowrap; }
+.due.late { background: var(--danger-soft); color: var(--danger); }
+.due.soon { background: var(--gold-soft); color: var(--gold-ink); }
+.due.ok { background: var(--teal-soft); color: var(--teal); }
+.del { flex: none; background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 1.2rem; line-height: 1; padding: .1rem .4rem; border-radius: 6px; }
+.del:hover { color: var(--danger); }
+details.phase { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 0 1.25rem; }
+details.phase > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 1rem; padding: 1rem 0; }
+details.phase > summary::-webkit-details-marker { display: none; }
+details.phase > summary::after { content: "+"; font-size: 1.5rem; color: var(--gold-ink); flex: none; width: 1.2rem; text-align: center; }
+.ph-head { flex: 1; min-width: 0; }
+details.phase[open] > summary::after { content: "\2212"; }
+.ph-title { font-family: var(--display); font-weight: 600; font-size: 1.05rem; }
+.ph-meta { color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+.ph-bar { width: 90px; height: 8px; border-radius: 99px; background: var(--line); overflow: hidden; flex: none; }
+.ph-bar i { display: block; height: 100%; background: var(--teal); }
+.ph-body { padding-bottom: .6rem; }
+.add { display: grid; gap: .8rem 1rem; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); align-items: end; }
+.add .fld.wide { grid-column: span 2; }
+@media (max-width: 520px) { .add .fld.wide { grid-column: auto; } }
+
+/* log */
+.tbl-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; min-width: 520px; }
+th, td { text-align: right; padding: .55rem .6rem; border-top: 1px solid var(--line); white-space: nowrap; }
+th { font-size: .75rem; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); border-top: 0; }
+th:first-child, td:first-child { text-align: left; }
+td.note { text-align: left; white-space: normal; min-width: 8rem; color: var(--muted); font-size: .9rem; }
+tfoot td { font-weight: 700; border-top: 2px solid var(--ink); }
+.empty { color: var(--muted); padding: 1rem 0; }
+.row-actions { display: flex; gap: .6rem; flex-wrap: wrap; align-items: center; margin-top: 1rem; }
+.msg { font-size: .9rem; color: var(--teal); min-height: 1.4em; }
+.msg.err { color: var(--danger); }
+.confirm { background: var(--danger-soft); border: 1px solid var(--danger); border-radius: 12px; padding: .9rem 1rem; display: flex; gap: .8rem; align-items: center; flex-wrap: wrap; }
+
+/* upsell, shown under every tab */
+.upsell-wrap { padding-bottom: calc(3rem + env(safe-area-inset-bottom, 0px)); }
+.upsell { background: var(--band); color: var(--on-band); border-radius: 16px; padding: clamp(1.25rem, 3vw, 2rem); display: grid; gap: 1.25rem 2rem; }
+.upsell .kicker { margin: 0; }
+.upsell h2 { font-size: clamp(1.3rem, 3vw, 1.75rem); font-weight: 700; margin-top: .6rem; max-width: 24ch; }
+.upsell h2 span { color: #e2c078; }
+.upsell p { color: var(--on-band-muted); max-width: 56ch; margin-top: .6rem; }
+.upsell ul { list-style: none; margin: 0; padding: 0; display: grid; gap: .1rem; align-content: start; }
+.upsell li { display: flex; justify-content: space-between; gap: 1rem; padding: .5rem 0; border-bottom: 1px solid rgba(180, 192, 217, .22); font-size: .95rem; }
+.upsell li b { font-family: var(--display); font-weight: 600; color: #e2c078; white-space: nowrap; }
+.upsell .btn { margin-top: 1.1rem; }
+@media (min-width: 820px) { .upsell { grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); align-items: center; } }
+@media (prefers-reduced-motion: no-preference) { .bar > i, .ph-bar i { transition: width .35s; } }
+</style>
+
+</head>
+<body>
+<header class="top">
+  <div class="in">
+    <div class="top-row">
+      <div>
+        <p class="kicker">Digital product launch</p>
+        <h1 id="hd-name">Product Launch Tracker</h1>
+      </div>
+      <p class="status" id="hd-status"></p>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" id="tab-overview" data-tab="overview" aria-controls="v-overview">Overview</button>
+      <button class="tab" role="tab" id="tab-checklist" data-tab="checklist" aria-controls="v-checklist">Checklist<span class="count" id="ct-check"></span></button>
+      <button class="tab" role="tab" id="tab-log" data-tab="log" aria-controls="v-log">Daily log</button>
+      <button class="tab" role="tab" id="tab-save" data-tab="save" aria-controls="v-save">Save and share</button>
+    </nav>
+  </div>
+</header>
+
+<main class="in">
+  <div class="banner" id="banner" hidden>
+    <p><strong>This is an example launch.</strong> Look around, then start your own. Changes you make to the example are not saved.</p>
+    <button class="btn btn-gold btn-sm" id="btn-start">Start my own launch</button>
+  </div>
+
+  <!-- OVERVIEW -->
+  <section id="v-overview" role="tabpanel" aria-labelledby="tab-overview" class="two" style="grid-template-columns:minmax(0,1fr)">
+    <div class="card">
+      <div class="card-head"><h2>Your launch</h2><p class="hint" id="start-line"></p></div>
+      <div class="grid">
+        <div class="fld"><label for="f-name">Product name</label><input id="f-name" type="text" placeholder="e.g. 500 Digital Product Ideas" autocomplete="off"></div>
+        <div class="fld"><label for="f-price">Price</label><input id="f-price" type="number" min="0" step="any" inputmode="decimal" placeholder="5"></div>
+        <div class="fld"><label for="f-cur">Currency symbol</label><input id="f-cur" type="text" maxlength="4" placeholder="$" autocomplete="off"></div>
+        <div class="fld"><label for="f-goal">Sales goal (copies)</label><input id="f-goal" type="number" min="1" step="1" inputmode="numeric" placeholder="50"></div>
+        <div class="fld"><label for="f-start">Day 1 started on</label><input id="f-start" type="date"></div>
+      </div>
+      <div class="row-actions"><button class="btn btn-gold btn-sm" id="btn-day1">Start Day 1 today</button><span class="hint">Your plan runs Day 1 to Day 14. Launch day is Day 10.</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Progress to your goal</h2><p class="hint" id="goal-line"></p></div>
+      <div class="bar" role="progressbar" aria-label="Sales goal progress" id="goal-bar" aria-valuemin="0" aria-valuemax="100"><i id="goal-fill" style="width:0%"></i></div>
+      <div class="bar-meta"><span id="bar-left"></span><span id="bar-right"></span></div>
+      <dl class="kpis" id="kpis"></dl>
+    </div>
+
+    <div class="two">
+      <div class="card">
+        <div class="card-head"><h2>Sales by day</h2></div>
+        <div id="chart"></div>
+        <div class="legend"><span><i></i>Copies sold</span><span><i class="bd"></i>Launch days (10 to 14)</span><span><i class="pl"></i>Daily pace needed to hit your goal</span></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Do next</h2><button class="btn btn-line btn-sm" data-go="checklist">Full checklist</button></div>
+        <ul class="tasks" id="next"></ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHECKLIST -->
+  <section id="v-checklist" role="tabpanel" aria-labelledby="tab-checklist" hidden>
+    <div style="display:grid;gap:1rem">
+      <p class="hint" id="ck-intro"></p>
+      <div id="phases" style="display:grid;gap:1rem"></div>
+      <div class="card">
+        <div class="card-head"><h2>Add your own task</h2></div>
+        <form class="add" id="add-form">
+          <div class="fld wide"><label for="a-title">Task</label><input id="a-title" type="text" required placeholder="e.g. Record a 60-second demo" autocomplete="off"></div>
+          <div class="fld"><label for="a-phase">Phase</label><select id="a-phase"></select></div>
+          <div class="fld"><label for="a-off">Day (1 to 14)</label><input id="a-off" type="number" min="1" max="14" step="1" value="8" inputmode="numeric"></div>
+          <button class="btn btn-gold" type="submit">Add task</button>
+        </form>
+        
+      </div>
+    </div>
+  </section>
+
+  <!-- LOG -->
+  <section id="v-log" role="tabpanel" aria-labelledby="tab-log" hidden>
+    <div style="display:grid;gap:1.25rem">
+      <div class="card">
+        <div class="card-head"><h2>Add today's numbers</h2><p class="hint">Takes under a minute. Leave a box empty for zero.</p></div>
+        <form class="add" id="log-form">
+          <div class="fld"><label for="l-day">Day (1 to 14)</label><input id="l-day" type="number" min="1" max="14" step="1" inputmode="numeric" required></div>
+          <div class="fld"><label for="l-posts">Posts and replies</label><input id="l-posts" type="number" min="0" step="1" inputmode="numeric"></div>
+          <div class="fld"><label for="l-clicks">Link clicks</label><input id="l-clicks" type="number" min="0" step="1" inputmode="numeric"></div>
+          <div class="fld"><label for="l-sales">Copies sold</label><input id="l-sales" type="number" min="0" step="1" inputmode="numeric"></div>
+          <div class="fld"><label for="l-rev">Revenue <span class="muted" id="l-cur"></span></label><input id="l-rev" type="number" min="0" step="any" inputmode="decimal" placeholder="auto"></div>
+          <div class="fld wide"><label for="l-note">What worked or what you noticed</label><input id="l-note" type="text" maxlength="160" autocomplete="off"></div>
+          <button class="btn btn-gold" type="submit">Save entry</button>
+        </form>
+        <p class="hint" style="margin-top:.6rem">Revenue fills in from your price when left empty. Use real numbers from your checkout.</p>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Daily log</h2></div>
+        <div class="tbl-wrap" id="log-table"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SAVE -->
+  <section id="v-save" role="tabpanel" aria-labelledby="tab-save" hidden>
+    <div style="display:grid;gap:1.25rem">
+      <div class="card">
+        <div class="card-head"><h2>Launch report</h2><p class="hint">A short summary you can paste into a note or message.</p></div>
+        <div class="fld"><label for="rep">Report</label><textarea id="rep" readonly style="font-family:var(--text);font-size:.92rem"></textarea></div>
+        <div class="row-actions"><button class="btn btn-gold btn-sm" id="copy-rep">Copy report</button><span class="msg" id="msg-rep"></span></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Back up or move your data</h2><p class="hint">Your progress is saved in this browser. To use another device, copy the backup and paste it there.</p></div>
+        <div class="fld"><label for="bk">Backup text</label><textarea id="bk" spellcheck="false"></textarea></div>
+        <div class="row-actions">
+          <button class="btn btn-gold btn-sm" id="copy-bk">Copy backup</button>
+          <button class="btn btn-line btn-sm" id="load-bk">Load from the text above</button>
+          <span class="msg" id="msg-bk"></span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h2>Start a new launch</h2></div>
+        <p class="hint">This clears the checklist progress, your log and the launch details in this browser.</p>
+        <div class="row-actions" id="reset-row"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<aside class="in upsell-wrap" aria-label="Upgrade offer">
+  <div class="upsell">
+    <div>
+      <p class="kicker">Next step</p>
+      <h2>Get the <span>Daily Sales System</span>.</h2>
+      <p>You are tracking your launch. The Daily Sales System gives you the tools to choose a product, check your idea, launch it, and find your first buyers.</p>
+      <a class="btn btn-gold" href="https://gorj.lemonsqueezy.com/checkout/buy/9018d0cb-27e6-4190-804f-6eaf6684bf0d?logo=0" target="_blank" rel="noopener">Get the system for $27</a>
+    </div>
+    <ul>
+      <li><span>Digital Product Launch Blueprint</span><b>$27</b></li>
+      <li><span>Done-For-You Launch System</span><b>$37</b></li>
+      <li><span>Idea Validator + Income Estimator Tool</span><b>$27</b></li>
+      <li><span>500 Digital Product Ideas</span><b>$17</b></li>
+      <li><span>First 100 Buyers Playbook</span><b>$27</b></li>
+    </ul>
+  </div>
+</aside>
+
+<script>
+(function () {
+  'use strict';
+  var KEY = 'plt-v2', LAUNCH = 10, END = 14;
+  var PHASES = [
+    { id: 'validate', name: 'Validate the idea' },
+    { id: 'build', name: 'Build the product' },
+    { id: 'setup', name: 'Set up selling' },
+    { id: 'pre', name: 'Warm up your audience' },
+    { id: 'launch', name: 'Launch week' },
+    { id: 'after', name: 'After launch' }
+  ];
+  // [phase, days from launch, title, hint]
+var T = [
+    ['validate', 1, 'Name one buyer and the one problem you solve', 'Write it as: "For [who] who want [result]."'],
+    ['validate', 1, 'Look at 3 similar products and note their prices', 'See what they promise and what buyers complain about.'],
+    ['validate', 2, 'Ask 5 people in your audience if they would buy it', 'Ask about the problem first. Note their own words.'],
+    ['validate', 2, 'Write your promise in one sentence', 'Specific and believable. No income or result guarantees.'],
+    ['validate', 2, 'Set your price and your sales goal', 'Enter both in the Overview tab so the numbers track.'],
+    ['build', 3, 'Outline the contents', 'List the sections or pages, with the result of each one.'],
+    ['build', 3, 'Write or build the first full version', 'Finish before you polish. Done beats perfect.'],
+    ['build', 4, 'Edit, fix mistakes and proofread', 'Read it out loud, or have one other person read it.'],
+    ['build', 4, 'Design the cover and a product mockup', 'The cover is what people see in every post and on the page.'],
+    ['build', 5, 'Export the final file or publish the tool', 'PDF, file or link. Name it clearly.'],
+    ['build', 5, 'Open the finished file on your phone', 'Most buyers will read it on a phone. Check it looks right.'],
+    ['setup', 6, 'Write the sales page', 'Headline, who it is for, what is inside, FAQ and one button.'],
+    ['setup', 6, 'Create the checkout and upload the product', 'Use the platform you already know. Keep it simple.'],
+    ['setup', 7, 'Make a test purchase', 'Buy it yourself. Check the price, the receipt and the download.'],
+    ['setup', 7, 'Write the delivery and thank-you message', 'Tell buyers where the file is and how to reach you.'],
+    ['setup', 7, 'Add a clear disclaimer and a support contact', 'No promised results. Add who to message for help.'],
+    ['setup', 8, 'Check every link on the page', 'Buy buttons, images, email and social links.'],
+    ['pre', 6, 'Post 3 teasers about the problem', 'Share the problem and what you are working on. Do not sell yet.'],
+    ['pre', 8, 'Write your launch post and two variations', 'Lead with the buyer and the result. Add one clear link.'],
+    ['pre', 8, 'Prepare answers to likely questions', 'Price, what is included, refunds, how to use it.'],
+    ['pre', 8, 'Plan content for launch week', 'One post per day plus replies. Use your hooks and templates.'],
+    ['pre', 9, 'Tell 5 to 10 people the launch date', 'Friends, past customers or people who asked for it.'],
+    ['pre', 9, 'Final check: page, checkout, delivery, links', 'Do one last full test from the buyer\'s side.'],
+    ['launch', 10, 'Publish the launch post and pin it', 'Post early so you can reply during the day.'],
+    ['launch', 10, 'Reply to every comment and message', 'Answer within the hour where you can.'],
+    ['launch', 10, 'Log today\'s numbers', 'Use the Daily log tab: posts, clicks, sales.'],
+    ['launch', 11, 'Post a second angle', 'A story, a mistake, or what is inside the product.'],
+    ['launch', 11, 'Reply under 10 posts in your niche', 'Be useful first. Mention the product only if it fits.'],
+    ['launch', 12, 'Share a real question or a real result from a buyer', 'Only share what a buyer has agreed to share.'],
+    ['launch', 12, 'Follow up with people who showed interest', 'A short, friendly message. No pressure.'],
+    ['launch', 13, 'Post a "what is inside" walkthrough', 'Show pages or screens so people can see the product.'],
+    ['launch', 13, 'Post a reminder before the window ends', 'Only mention a deadline if you really have one.'],
+    ['after', 13, 'Ask buyers what they liked and what was missing', 'Two short questions get more replies than a long form.'],
+    ['after', 14, 'Ask happy buyers for a short review', 'Ask for their words. Never write one for them.'],
+    ['after', 14, 'Fix the biggest question on your sales page', 'Whatever people asked most, answer it on the page.'],
+    ['after', 14, 'Note which posts and channels brought sales', 'Do more of what worked next time.'],
+    ['after', 14, 'Plan your next product or upgrade', 'Use buyer questions to pick it.'],
+    ['after', 14, 'Write down three lessons from this launch', 'Keep them for the next launch.']
+  ];
+
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function ymd(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function parse(s) { var p = String(s).split('-'); return new Date(+p[0], +p[1] - 1, +p[2], 12); }
+  function today() { var d = new Date(); return parse(ymd(d)); }
+  function addDays(d, n) { var x = new Date(d.getTime()); x.setDate(x.getDate() + n); return parse(ymd(x)); }
+  function diff(a, b) { return Math.round((a.getTime() - b.getTime()) / 86400000); }
+  function fmt(d) { return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); }
+  function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  function num(v) { var n = parseFloat(v); return isFinite(n) ? n : 0; }
+  function $(id) { return document.getElementById(id); }
+  function uid() { return 'c' + Math.random().toString(36).slice(2, 9); }
+
+
+  function blank() { return { v: 2, name: '', price: '', cur: '$', goal: '', start: '', done: {}, custom: [], log: [] }; }
+  function example() {
+    var t = today(), s = blank();
+    s.name = 'Digital Product Ideas Pack'; s.price = 5; s.cur = '$'; s.goal = 30;
+    s.start = ymd(addDays(t, -11));
+    T.forEach(function (x, i) { if (x[1] <= 11) s.done['t' + i] = true; });
+    var rows = [[9, 3, 12, 0, 'Teasers got the most saves'], [10, 4, 55, 6, 'Launch post got the most replies'], [11, 5, 70, 8, 'Replies under bigger accounts brought clicks']];
+    rows.forEach(function (r) { s.log.push({ id: uid(), day: r[0], posts: r[1], clicks: r[2], sales: r[3], revenue: r[3] * 5, note: r[4] }); });
+    return s;
+  }
+
+  var S, isExample = false;
+  function load() {
+    try { var raw = localStorage.getItem(KEY); if (raw) { var o = JSON.parse(raw); if (o && o.v === 2) return o; } } catch (e) {}
+    return null;
+  }
+  function save() { if (isExample) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  var saved = load();
+  if (saved) { S = saved; } else { S = example(); isExample = true; }
+
+  function allTasks() {
+    var list = T.map(function (x, i) { return { id: 't' + i, phase: x[0], day: x[1], title: x[2], hint: x[3], custom: false }; });
+    S.custom.forEach(function (c) { list.push({ id: c.id, phase: c.phase, day: c.day, title: c.title, hint: '', custom: true }); });
+    return list;
+  }
+  function curDay() { if (!S.start) return 0; var n = diff(today(), parse(S.start)) + 1; return n; }
+  function stats() {
+    var sales = 0, rev = 0, clicks = 0, posts = 0;
+    S.log.forEach(function (e) { sales += num(e.sales); rev += num(e.revenue); clicks += num(e.clicks); posts += num(e.posts); });
+    var goal = num(S.goal), cur = curDay(), lDays = END - LAUNCH + 1;
+    var left = cur < LAUNCH ? lDays : (cur <= END ? END - cur + 1 : 0);
+    var need = goal > 0 && cur >= 1 && left > 0 ? Math.max(0, goal - sales) / left : null;
+    var el = cur >= LAUNCH ? Math.min(cur, END) - LAUNCH + 1 : 0;
+    var avg = el > 0 ? sales / el : null;
+    return { sales: sales, rev: rev, clicks: clicks, posts: posts, goal: goal, cur: cur, left: left, need: need, avg: avg, conv: clicks > 0 ? sales / clicks * 100 : null, proj: avg !== null ? avg * lDays : null };
+  }
+  function money(n) {
+    var c = S.cur || '';
+    var v = Math.abs(n - Math.round(n)) < 0.005 ? Math.round(n).toLocaleString() : n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return c + v;
+  }
+  function dueInfo(t) {
+    var cur = curDay(), done = !!S.done[t.id];
+    var cls = '', label = 'Day ' + t.day;
+    if (cur >= 1) {
+      var n = t.day - cur;
+      if (done) cls = 'ok';
+      else if (n < 0) { cls = 'late'; label = Math.abs(n) + (Math.abs(n) === 1 ? ' day late' : ' days late'); }
+      else if (n === 0) { cls = 'soon'; label = 'Today'; }
+      else if (n === 1) cls = 'soon';
+    } else if (done) cls = 'ok';
+    return { cls: cls, label: label, n: cur >= 1 ? t.day - cur : 99 };
+  }
+
+  function taskRow(t, showDel) {
+    var cid = 'k-' + (showDel ? 'c-' : 'o-') + t.id;
+    var di = dueInfo(t);
+    return '<li class="task' + (S.done[t.id] ? ' done' : '') + '"><input type="checkbox" id="' + cid + '" data-task="' + t.id + '"' + (S.done[t.id] ? ' checked' : '') + '>' +
+      '<label class="task-body" for="' + cid + '"><div class="task-title">' + esc(t.title) + '</div>' + (t.hint ? '<div class="task-hint">' + esc(t.hint) + '</div>' : '') + '</label>' +
+      '<span class="due ' + di.cls + '">' + esc(di.label) + '</span>' +
+      (showDel && t.custom ? '<button class="del" data-del="' + t.id + '" aria-label="Delete task ' + esc(t.title) + '" title="Delete">&times;</button>' : '') + '</li>';
+  }
+
+  function statusText(st) {
+    if (st.cur < 1) return S.start ? 'Starts in ' + (1 - st.cur) + (1 - st.cur === 1 ? ' day' : ' days') : 'Not started yet';
+    if (st.cur < LAUNCH) return 'Day ' + st.cur + ' of ' + END + ' · launch on Day ' + LAUNCH;
+    if (st.cur === LAUNCH) return 'Day ' + st.cur + ' of ' + END + ' · launch day';
+    if (st.cur <= END) return 'Day ' + st.cur + ' of ' + END;
+    return 'Plan finished';
+  }
+  function renderHeader() {
+    var st = stats();
+    $('hd-name').textContent = S.name ? S.name : 'Product Launch Tracker';
+    $('hd-status').textContent = statusText(st);
+    var all = allTasks(), done = all.filter(function (t) { return S.done[t.id]; }).length;
+    $('ct-check').textContent = done + '/' + all.length;
+    $('banner').hidden = !isExample;
+    $('start-line').textContent = st.cur >= 1 ? 'Today is Day ' + st.cur + ' of ' + END + '.' : 'Press the button when you begin. Day 1 is the day you start.';
+    $('btn-day1').hidden = st.cur >= 1;
+  }
+
+  function renderOverview() {
+    var st = stats();
+    var pct = st.goal > 0 ? Math.min(100, st.sales / st.goal * 100) : 0;
+    $('goal-fill').style.width = pct + '%';
+    $('goal-bar').setAttribute('aria-valuenow', Math.round(pct));
+    $('goal-line').textContent = st.goal > 0 ? 'Goal: ' + st.goal.toLocaleString() + ' copies' + (num(S.price) > 0 ? ' (' + money(st.goal * num(S.price)) + ')' : '') : 'Add a sales goal above';
+    $('bar-left').textContent = st.sales.toLocaleString() + ' sold';
+    $('bar-right').textContent = st.goal > 0 ? Math.round(pct) + '% of goal' : '';
+    var k = [];
+    k.push(['Revenue', money(st.rev), num(S.price) > 0 ? 'at ' + money(num(S.price)) + ' each' : '']);
+    k.push(['Copies sold', st.sales.toLocaleString(), st.goal > 0 ? Math.max(0, st.goal - st.sales).toLocaleString() + ' to go' : '']);
+    k.push(['Link clicks', st.clicks.toLocaleString(), st.posts ? st.posts.toLocaleString() + ' posts and replies' : '']);
+    k.push(['Click to sale', st.conv === null ? 'No data' : st.conv.toFixed(1) + '%', st.conv === null ? 'Log clicks and sales' : 'of clicks bought']);
+    k.push(['Needed per day', st.need === null ? (st.cur > END ? 'Plan over' : 'Not started') : (Math.round(st.need * 10) / 10).toLocaleString(), st.need === null ? '' : 'copies, ' + st.left + (st.left === 1 ? ' launch day left' : ' launch days left')]);
+    k.push(['At your pace', st.proj === null ? 'No data' : Math.round(st.proj).toLocaleString(), st.proj === null ? 'Starts on launch day' : 'copies by Day ' + END]);
+    $('kpis').innerHTML = k.map(function (x) { return '<div class="kpi"><dt>' + x[0] + '</dt><dd>' + esc(x[1]) + (x[2] ? '<small>' + esc(x[2]) + '</small>' : '') + '</dd></div>'; }).join('');
+    renderChart(st);
+    var open = allTasks().filter(function (t) { return !S.done[t.id]; });
+    open.sort(function (a, b) { return a.day - b.day; });
+    var late = open.filter(function (t) { return dueInfo(t).n < 0; });
+    var rest = open.filter(function (t) { return dueInfo(t).n >= 0; });
+    var list = late.slice(0, 2).concat(rest.slice(0, 5 - Math.min(2, late.length)));
+    $('next').innerHTML = list.length ? list.map(function (t) { return taskRow(t, false); }).join('') : '<li class="empty">Every task is done. Nice work.</li>';
+  }
+
+  function renderChart(st) {
+    var by = [], i;
+    for (i = 0; i < END; i++) by.push(0);
+    S.log.forEach(function (e) { var d = Math.round(num(e.day)); if (d >= 1 && d <= END) by[d - 1] += num(e.sales); });
+    var lDays = END - LAUNCH + 1, pace = st.goal > 0 ? st.goal / lDays : 0;
+    var mx = Math.max.apply(null, by.concat([pace, 1]));
+    var step = mx <= 5 ? 1 : mx <= 10 ? 2 : mx <= 25 ? 5 : mx <= 50 ? 10 : mx <= 100 ? 20 : 50;
+    var top = Math.ceil(mx / step) * step;
+    var W = 560, H = 200, L = 34, R = 8, Tp = 10, B = 24, pw = W - L - R, ph = H - Tp - B, bw = pw / END, g = '', b = '', lab = '';
+    g += '<rect class="bandr" x="' + (L + (LAUNCH - 1) * bw) + '" y="' + Tp + '" width="' + (lDays * bw) + '" height="' + ph + '"/>';
+    for (var v = 0; v <= top; v += step) { var y = Tp + ph - v / top * ph; g += '<line class="g" x1="' + L + '" x2="' + (W - R) + '" y1="' + y + '" y2="' + y + '"/><text x="' + (L - 6) + '" y="' + (y + 4) + '" text-anchor="end">' + v + '</text>'; }
+    for (i = 0; i < END; i++) {
+      var h = by[i] / top * ph, hh = Math.max(h, 2), fut = st.cur < 1 || (i + 1 > st.cur);
+      b += '<rect class="b' + (fut && by[i] === 0 ? ' future' : '') + '" x="' + (L + i * bw + bw * 0.15) + '" y="' + (Tp + ph - hh) + '" width="' + (bw * 0.7) + '" height="' + hh + '" rx="2"><title>Day ' + (i + 1) + ': ' + by[i] + ' sold</title></rect>';
+      lab += '<text x="' + (L + i * bw + bw / 2) + '" y="' + (H - 6) + '" text-anchor="middle">' + (i + 1) + '</text>';
+    }
+    var py = Tp + ph - pace / top * ph;
+    var pl = pace > 0 ? '<line class="p" x1="' + (L + (LAUNCH - 1) * bw) + '" x2="' + (W - R) + '" y1="' + py + '" y2="' + py + '"/>' : '';
+    $('chart').innerHTML = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Copies sold on each day, with the daily pace needed for the goal on launch days">' + g + b + pl + lab + '</svg>';
+  }
+
+  var freshOpen = false;
+  function renderChecklist() {
+    var all = allTasks(), out = '';
+    var sel = $('a-phase'); if (!sel.options.length) sel.innerHTML = PHASES.map(function (p) { return '<option value="' + p.id + '">' + esc(p.name) + '</option>'; }).join('');
+    var openState = {};
+    if (freshOpen) { freshOpen = false; } else { var ds = document.querySelectorAll('#phases details'); for (var j = 0; j < ds.length; j++) openState[ds[j].getAttribute('data-ph')] = ds[j].open; }
+    var firstOpenSet = false;
+    PHASES.forEach(function (p) {
+      var items = all.filter(function (t) { return t.phase === p.id; }).sort(function (a, b) { return a.day - b.day; });
+      var d = items.filter(function (t) { return S.done[t.id]; }).length;
+      var isOpen = p.id in openState ? openState[p.id] : (!firstOpenSet && d < items.length);
+      if (isOpen) firstOpenSet = true;
+      var first = items.length ? items[0].day : 0, last = items.length ? items[items.length - 1].day : 0;
+      out += '<details class="phase" data-ph="' + p.id + '"' + (isOpen ? ' open' : '') + '><summary><div class="ph-head"><div class="ph-title">' + esc(p.name) + '</div><div class="ph-meta">' + (first ? (first === last ? 'Day ' + first : 'Days ' + first + ' to ' + last) + ' · ' : '') + d + ' of ' + items.length + ' done</div></div><div class="ph-bar"><i style="width:' + (items.length ? d / items.length * 100 : 0) + '%"></i></div></summary><div class="ph-body"><ul class="tasks">' + items.map(function (t) { return taskRow(t, true); }).join('') + '</ul></div></details>';
+    });
+    $('phases').innerHTML = out;
+    var dn = all.filter(function (t) { return S.done[t.id]; }).length, st = stats();
+    $('ck-intro').textContent = dn + ' of ' + all.length + ' tasks done. ' + (st.cur >= 1 ? 'Today is Day ' + st.cur + '.' : 'Press "Start Day 1 today" in the Overview tab to see which tasks are late.');
+  }
+
+  function renderLog() {
+    $('l-cur').textContent = S.cur ? '(' + S.cur + ')' : '';
+    var rows = S.log.slice().sort(function (a, b) { return num(b.day) - num(a.day); });
+    if (!rows.length) { $('log-table').innerHTML = '<p class="empty">No entries yet. Add your first day above.</p>'; return; }
+    var st = stats();
+    var h = '<table><thead><tr><th>Day</th><th>Posts</th><th>Clicks</th><th>Sold</th><th>Revenue</th><th style="text-align:left">Note</th><th><span style="position:absolute;left:-9999px">Delete</span></th></tr></thead><tbody>';
+    rows.forEach(function (e) {
+      h += '<tr><td>Day ' + num(e.day) + '</td><td>' + num(e.posts) + '</td><td>' + num(e.clicks) + '</td><td>' + num(e.sales) + '</td><td>' + money(num(e.revenue)) + '</td><td class="note">' + esc(e.note || '') + '</td><td><button class="del" data-dellog="' + e.id + '" aria-label="Delete entry for Day ' + num(e.day) + '" title="Delete">&times;</button></td></tr>';
+    });
+    h += '</tbody><tfoot><tr><td>Total</td><td>' + st.posts + '</td><td>' + st.clicks + '</td><td>' + st.sales + '</td><td>' + money(st.rev) + '</td><td></td><td></td></tr></tfoot></table>';
+    $('log-table').innerHTML = h;
+  }
+
+  function reportText() {
+    var st = stats(), all = allTasks(), dn = all.filter(function (t) { return S.done[t.id]; }).length;
+    var L = [];
+    L.push('Launch report: ' + (S.name || 'my digital product'));
+    L.push('Progress: ' + statusText(st));
+    L.push('Checklist: ' + dn + ' of ' + all.length + ' tasks done');
+    L.push('Sales: ' + st.sales + (st.goal > 0 ? ' of ' + st.goal : '') + ' copies, ' + money(st.rev) + ' revenue');
+    if (st.clicks) L.push('Link clicks: ' + st.clicks + (st.conv !== null ? ' (' + st.conv.toFixed(1) + '% bought)' : ''));
+    if (st.need !== null) L.push('Pace needed: ' + (Math.round(st.need * 10) / 10) + ' copies per day for the next ' + st.left + ' launch days');
+    var notes = S.log.filter(function (e) { return e.note; }).sort(function (a, b) { return num(b.day) - num(a.day); }).slice(0, 3);
+    if (notes.length) { L.push('Recent notes:'); notes.forEach(function (e) { L.push('- Day ' + num(e.day) + ': ' + e.note); }); }
+    return L.join('\n');
+  }
+  function renderSave() { $('rep').value = reportText(); $('bk').value = JSON.stringify(S); }
+
+  function setField() {
+    $('f-name').value = S.name; $('f-start').value = S.start; $('f-price').value = S.price; $('f-cur').value = S.cur; $('f-goal').value = S.goal;
+    var st = stats(); $('l-day').value = st.cur >= 1 && st.cur <= END ? st.cur : LAUNCH;
+  }
+  var current = 'overview';
+  function renderAll() { renderHeader(); renderOverview(); renderChecklist(); renderLog(); if (current === 'save') renderSave(); }
+
+  // ---- tabs
+  var TABS = ['overview', 'checklist', 'log', 'save'];
+  function show(name, push) {
+    if (TABS.indexOf(name) < 0) name = 'overview';
+    current = name;
+    TABS.forEach(function (t) {
+      $('v-' + t).hidden = t !== name;
+      $('tab-' + t).setAttribute('aria-selected', t === name ? 'true' : 'false');
+    });
+    if (name === 'save') renderSave();
+    if (push && location.hash !== '#' + name) { try { history.replaceState(null, '', '#' + name); } catch (e) {} }
+  }
+  document.querySelector('.tabs').addEventListener('click', function (e) { var b = e.target.closest('[data-tab]'); if (b) show(b.getAttribute('data-tab'), true); });
+  window.addEventListener('hashchange', function () { show(location.hash.slice(1)); });
+  document.addEventListener('click', function (e) { var g = e.target.closest('[data-go]'); if (g) { show(g.getAttribute('data-go'), true); window.scrollTo(0, 0); } });
+
+  // ---- fields
+  function bind(id, key, conv) {
+    $(id).addEventListener('input', function () { S[key] = conv ? conv(this.value) : this.value; save(); renderHeader(); renderOverview(); renderChecklist(); renderLog(); });
+  }
+  bind('f-name', 'name'); bind('f-start', 'start'); bind('f-price', 'price'); bind('f-cur', 'cur'); bind('f-goal', 'goal');
+  $('btn-day1').addEventListener('click', function () { S.start = ymd(today()); save(); setField(); renderAll(); });
+
+  // ---- tasks
+  document.addEventListener('change', function (e) {
+    var c = e.target.closest('[data-task]');
+    if (!c) return;
+    var id = c.getAttribute('data-task');
+    if (c.checked) S.done[id] = true; else delete S.done[id];
+    save(); renderAll();
+  });
+  document.addEventListener('click', function (e) {
+    var d = e.target.closest('[data-del]');
+    if (d) { var id = d.getAttribute('data-del'); S.custom = S.custom.filter(function (c) { return c.id !== id; }); delete S.done[id]; save(); renderAll(); return; }
+    var l = e.target.closest('[data-dellog]');
+    if (l) { var lid = l.getAttribute('data-dellog'); S.log = S.log.filter(function (x) { return x.id !== lid; }); save(); renderAll(); }
+  });
+  $('add-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var title = $('a-title').value.trim(); if (!title) return;
+    S.custom.push({ id: uid(), phase: $('a-phase').value, day: Math.min(END, Math.max(1, Math.round(num($('a-off').value)) || 1)), title: title });
+    $('a-title').value = ''; save(); renderAll();
+  });
+
+  // ---- log
+  $('log-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var day = Math.min(60, Math.max(1, Math.round(num($('l-day').value)) || 0)); if (!day) return;
+    var sales = Math.max(0, Math.round(num($('l-sales').value)));
+    var revRaw = $('l-rev').value.trim();
+    var rev = revRaw === '' ? sales * num(S.price) : num(revRaw);
+    S.log.push({ id: uid(), day: day, posts: Math.max(0, Math.round(num($('l-posts').value))), clicks: Math.max(0, Math.round(num($('l-clicks').value))), sales: sales, revenue: rev, note: $('l-note').value.trim() });
+    ['l-posts', 'l-clicks', 'l-sales', 'l-rev', 'l-note'].forEach(function (id) { $(id).value = ''; });
+    save(); renderAll();
+  });
+
+  // ---- save tab
+  function copy(text, msgId, okText) {
+    var m = $(msgId);
+    function fallback() { m.className = 'msg err'; m.textContent = 'Copy did not work here. Select the text and copy it.'; }
+    try {
+      navigator.clipboard.writeText(text).then(function () { m.className = 'msg'; m.textContent = okText; }, fallback);
+    } catch (e) { fallback(); }
+  }
+  $('copy-rep').addEventListener('click', function () { copy($('rep').value, 'msg-rep', 'Report copied.'); });
+  $('copy-bk').addEventListener('click', function () { copy($('bk').value, 'msg-bk', 'Backup copied.'); });
+  $('load-bk').addEventListener('click', function () {
+    var m = $('msg-bk');
+    try {
+      var o = JSON.parse($('bk').value);
+      if (!o || o.v !== 2 || !Array.isArray(o.log) || !Array.isArray(o.custom) || typeof o.done !== 'object') throw new Error('shape');
+      freshOpen = true; S = o; isExample = false; save(); setField(); renderAll(); renderSave();
+      m.className = 'msg'; m.textContent = 'Backup loaded.';
+    } catch (e) { m.className = 'msg err'; m.textContent = 'That text is not a valid backup. Copy it again from the other device.'; }
+  });
+  function startOwn() { freshOpen = true; S = blank(); isExample = false; save(); setField(); renderAll(); show('overview', true); window.scrollTo(0, 0); }
+  $('btn-start').addEventListener('click', startOwn);
+  var RESET_IDLE = '<button class="btn btn-line btn-sm" data-reset="ask">Clear everything</button>';
+  $('reset-row').innerHTML = RESET_IDLE;
+  $('reset-row').addEventListener('click', function (e) {
+    var a = e.target.closest('[data-reset]'); if (!a) return;
+    var k = a.getAttribute('data-reset');
+    if (k === 'ask') $('reset-row').innerHTML = '<div class="confirm"><span>Clear everything in this browser?</span><button class="btn btn-danger btn-sm" data-reset="yes">Yes, clear it</button><button class="btn btn-line btn-sm" data-reset="no">Cancel</button></div>';
+    else { $('reset-row').innerHTML = RESET_IDLE; if (k === 'yes') startOwn(); }
+  });
+
+  setField();
+  renderAll();
+  show(location.hash.slice(1) || 'overview');
+})();
+</script>
+
+</body>
+</html>
