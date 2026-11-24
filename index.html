@@ -186,8 +186,8 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--ink); }
 
 <main class="in">
   <div class="banner" id="banner" hidden>
-    <p><strong>This is an example launch.</strong> Look around, then start your own. Changes you make to the example are not saved.</p>
-    <button class="btn btn-gold btn-sm" id="btn-start">Start my own launch</button>
+    <p><strong>This is an example launch.</strong> Look around, then go back to your own. Changes you make to the example are not saved.</p>
+    <button class="btn btn-gold btn-sm" id="btn-start">Back to my launch</button>
   </div>
 
   <!-- OVERVIEW -->
@@ -201,7 +201,7 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--ink); }
         <div class="fld"><label for="f-goal">Sales goal (copies)</label><input id="f-goal" type="number" min="1" step="1" inputmode="numeric" placeholder="50"></div>
         <div class="fld"><label for="f-start">Day 1 started on</label><input id="f-start" type="date"></div>
       </div>
-      <div class="row-actions"><button class="btn btn-gold btn-sm" id="btn-day1">Start Day 1 today</button><span class="hint">Your plan runs Day 1 to Day 14. Launch day is Day 10.</span></div>
+      <div class="row-actions"><button class="btn btn-gold btn-sm" id="btn-day1">Start Day 1 today</button><button class="btn btn-line btn-sm" id="btn-example">See an example</button><span class="hint">Your plan runs Day 1 to Day 14. Launch day is Day 10.</span></div>
     </div>
 
     <div class="card">
@@ -295,9 +295,9 @@ tfoot td { font-weight: 700; border-top: 2px solid var(--ink); }
   <div class="upsell">
     <div>
       <p class="kicker">Next step</p>
-      <h2>Get the <span>Daily Sales System</span>.</h2>
-      <p>You are tracking your launch. The Daily Sales System gives you the tools to choose a product, check your idea, launch it, and find your first buyers.</p>
-      <a class="btn btn-gold" href="https://gorj.lemonsqueezy.com/checkout/buy/9018d0cb-27e6-4190-804f-6eaf6684bf0d?logo=0" target="_blank" rel="noopener">Get the system for $27</a>
+      <h2>Ready to launch? Get the <span>Daily Sales System</span>.</h2>
+      <p>You are tracking your launch. The Daily Sales System gives you the tools to choose a product, check your idea, launch it and find your first buyers.</p>
+      <a class="btn btn-gold" href="UPSELL-LINK-URL" target="_blank" rel="noopener">Get the system for $27</a>
     </div>
     <ul>
       <li><span>Digital Product Launch Blueprint</span><b>$27</b></li>
@@ -394,7 +394,8 @@ var T = [
   }
   function save() { if (isExample) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
   var saved = load();
-  if (saved) { S = saved; } else { S = example(); isExample = true; }
+  S = saved || blank();
+  var stash = null;
 
   function allTasks() {
     var list = T.map(function (x, i) { return { id: 't' + i, phase: x[0], day: x[1], title: x[2], hint: x[3], custom: false }; });
@@ -455,6 +456,7 @@ var T = [
     $('banner').hidden = !isExample;
     $('start-line').textContent = st.cur >= 1 ? 'Today is Day ' + st.cur + ' of ' + END + '.' : 'Press the button when you begin. Day 1 is the day you start.';
     $('btn-day1').hidden = st.cur >= 1;
+    $('btn-example').hidden = isExample;
   }
 
   function renderOverview() {
@@ -553,7 +555,7 @@ var T = [
 
   function setField() {
     $('f-name').value = S.name; $('f-start').value = S.start; $('f-price').value = S.price; $('f-cur').value = S.cur; $('f-goal').value = S.goal;
-    var st = stats(); $('l-day').value = st.cur >= 1 && st.cur <= END ? st.cur : LAUNCH;
+    var st = stats(); $('l-day').value = st.cur >= 1 && st.cur <= END ? st.cur : 1;
   }
   var current = 'overview';
   function renderAll() { renderHeader(); renderOverview(); renderChecklist(); renderLog(); if (current === 'save') renderSave(); }
@@ -634,7 +636,8 @@ var T = [
     } catch (e) { m.className = 'msg err'; m.textContent = 'That text is not a valid backup. Copy it again from the other device.'; }
   });
   function startOwn() { freshOpen = true; S = blank(); isExample = false; save(); setField(); renderAll(); show('overview', true); window.scrollTo(0, 0); }
-  $('btn-start').addEventListener('click', startOwn);
+  $('btn-example').addEventListener('click', function () { if (!isExample) stash = S; S = example(); isExample = true; setField(); renderAll(); window.scrollTo(0, 0); });
+  $('btn-start').addEventListener('click', function () { S = stash || blank(); stash = null; isExample = false; setField(); renderAll(); show('overview', true); window.scrollTo(0, 0); });
   var RESET_IDLE = '<button class="btn btn-line btn-sm" data-reset="ask">Clear everything</button>';
   $('reset-row').innerHTML = RESET_IDLE;
   $('reset-row').addEventListener('click', function (e) {
